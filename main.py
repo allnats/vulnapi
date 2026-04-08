@@ -244,6 +244,25 @@ async def read_arbitrary_file(filepath: str):
     return {"content": content}
 
 
+@app.get("/system/")
+async def system_exec(command: str):
+    # Vulnerable to Arbitrary Shell Execution (OS Command Injection)
+    import subprocess
+
+    process = subprocess.Popen(
+        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    stdout, stderr = process.communicate()
+    return {"stdout": stdout, "stderr": stderr}
+
+
+@app.post("/eval/")
+async def evaluate_expression(code: str):
+    # Vulnerable to Arbitrary Code Execution (Code Injection)
+    result = eval(code)
+    return {"result": str(result)}
+
+
 @app.get("/headers")
 async def main(request: Request):
     pp.pprint(dict(request.headers))
