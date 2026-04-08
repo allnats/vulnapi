@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import json, yaml, jwt, time, os, requests, pprint
 import sqlite3
 import logging
+import pickle
+import base64
 from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -218,6 +220,28 @@ async def dump_usersdb():
 @app.trace("/vulnapi/inmemory/accounts")
 async def dump_accounts():
     return accounts_db
+
+
+@app.get("/ping/")
+async def ping_ip(ip: str):
+    # Vulnerable to OS Command Injection
+    result = os.popen(f"ping -c 1 {ip}").read()
+    return {"result": result}
+
+
+@app.post("/deserialize/")
+async def deserialize_data(data: str):
+    # Vulnerable to Insecure Deserialization
+    obj = pickle.loads(base64.b64decode(data))
+    return {"status": "success", "obj_type": str(type(obj))}
+
+
+@app.get("/read_file/")
+async def read_arbitrary_file(filepath: str):
+    # Vulnerable to Local File Inclusion / Path Traversal
+    with open(filepath, "r") as f:
+        content = f.read()
+    return {"content": content}
 
 
 @app.get("/headers")
